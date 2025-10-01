@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Y3 Science Interactive — Living vs Non‑Living</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--blue:#3b82f6}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+    header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+    h1{margin:0;font-size:20px}
+    .sub{color:var(--muted);font-size:13px}
+    .wrap{max-width:1200px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+    @media(min-width:1000px){.wrap{grid-template-columns:1.35fr .65fr}}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .tab{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+    .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:8px}
+    button{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+    button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+    button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+    input,select,textarea{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px}
+    textarea{min-height:90px}
+    .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+    .ok{color:var(--ok)} .err{color:var(--err)} .muted{color:var(--muted)}
+    .grid{display:grid;gap:12px}
+    .slot{border:2px dashed #334155;border-radius:12px;min-height:64px;padding:8px}
+    .chip{padding:10px 12px;border:1px solid #2a3646;border-radius:12px;background:#0b1220;display:inline-flex;gap:8px;align-items:center;cursor:grab;margin:6px}
+    .pill{padding:6px 10px;border:1px solid #253042;border-radius:999px;background:#0b1220}
+    .panel{background:#0b1220;border:1px solid #253042;border-radius:12px;padding:10px}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .score{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .tiny{font-size:12px;color:#94a3b8}
+    .tag{font-size:12px;padding:2px 6px;border:1px solid #2a3646;border-radius:999px}
+    .poster{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .poster .col{min-height:220px;border:2px dashed #334155;border-radius:12px;padding:8px}
+    .poster .item{background:#0b1220;border:1px solid #253042;border-radius:10px;padding:6px 8px;margin:6px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Y3 Science Interactive — Living vs Non‑Living</h1>
+    <div class="sub">Sort • Field checklist • Poster creation • Quiz · Values: Allah created all things • Gratitude • Care for environment</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="sort">1) Sort: Living / Non‑Living</button>
+      <button class="tab" data-tab="field">2) Field Checklist (Outdoor Simulator)</button>
+      <button class="tab" data-tab="poster">3) Poster Builder (Gallery Walk)</button>
+      <button class="tab" data-tab="quiz">4) Quick Quiz & Reflection</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Value Links</h3>
+      <div class="panel">
+        <ul class="muted" style="margin-left:18px">
+          <li>Begin with salam & short dua for knowledge and safety.</li>
+          <li>Ask guiding questions: “Does it <b>eat/drink</b>? <b>Grow</b>? <b>Move by itself</b>?”</li>
+          <li>Value link: Allah created everything; we say <i>Alhamdulillah</i> for His creations.</li>
+          <li>Eco link: Observe respectfully; do not harm plants/animals; don’t litter.</li>
+        </ul>
+      </div>
+      <div class="result score"><div class="panel">Score<br><b id="score">0</b></div><div class="panel">Attempts<br><b id="tries">0</b></div><div class="panel">Stars<br><b id="stars">★☆☆</b></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+    let SCORE=0, TRIES=0; const add=(n)=>{SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES; const star = SCORE>=20? '★★★': SCORE>=12? '★★☆': SCORE>=6? '★☆☆':'☆☆☆'; $('#stars').textContent=star; };
+    $$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const id=t.dataset.tab; if(id==='sort') renderSort(); if(id==='field') renderField(); if(id==='poster') renderPoster(); if(id==='quiz') renderQuiz(); }));
+
+    // ====== 1) SORT ======
+    function renderSort(){
+      const v=$('#view'); v.innerHTML='';
+      const pool=[
+        {name:'Cat 🐱', living:true, cues:'eats, grows, moves on its own'},
+        {name:'Flower 🌸', living:true, cues:'needs water & sunlight, grows'},
+        {name:'Tree 🌳', living:true, cues:'grows, makes seeds'},
+        {name:'Mushroom 🍄', living:true, cues:'feeds, grows (not a plant!)'},
+        {name:'Rock 🪨', living:false, cues:'does not eat, grow, or move on its own'},
+        {name:'Toy Car 🚗', living:false, cues:'moves only when pushed'},
+        {name:'Cloud ☁️', living:false, cues:'made of water droplets, not alive'},
+        {name:'Fish 🐟', living:true, cues:'breathes, eats, grows'},
+        {name:'Phone 📱', living:false, cues:'man‑made object'},
+        {name:'Seed 🌱', living:true, cues:'can grow into a plant'}
+      ];
+      const picks = pool.sort(()=>0.5-Math.random()).slice(0,8);
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><button id="regen" class="primary">New Cards</button> <button id="check" class="primary">Check Sorting</button> <button id="hint" class="warn">Hint</button></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+          <div>
+            <div class="muted">Cards (drag to the correct group). Volunteers explain one choice.</div>
+            <div id="cards" class="panel"></div>
+          </div>
+          <div class="two">
+            <div>
+              <div class="muted">✔ Living</div>
+              <div id="dzL" class="slot"></div>
+            </div>
+            <div>
+              <div class="muted">✘ Non‑living</div>
+              <div id="dzN" class="slot"></div>
+            </div>
+          </div>
+        </div>
+        <div class="result" id="out"></div>
+        <div class="panel muted">Islamic link: Allah made living and non‑living things; we use our <b>aql</b> to observe wisely.</div>
+      `; v.appendChild(ui);
+      const draw=()=>{ const C=$('#cards'); C.innerHTML=''; picks.forEach((p,i)=>{ const el=document.createElement('div'); el.className='chip'; el.innerHTML=`<span>${p.name}</span><span class="tag tiny">info</span>`; el.draggable=true; el.dataset.live=p.living?'1':'0'; el.title=p.cues; el.id='p_'+i; el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.id)); el.querySelector('.tag').onclick=(ev)=>{ ev.stopPropagation(); alert(p.name+" — "+p.cues); }; C.appendChild(el); }); };
+      const drop=(el)=>{ el.addEventListener('dragover',e=>{e.preventDefault(); el.style.outline='2px solid var(--ok)'}); el.addEventListener('dragleave',()=>el.style.outline='none'); el.addEventListener('drop',e=>{e.preventDefault(); el.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip) el.appendChild(chip); }); };
+      drop($('#dzL')); drop($('#dzN'));
+      $('#regen').onclick=draw; draw();
+      $('#hint').onclick=()=>{ $('#out').innerHTML='Living things: <b>eat/drink</b>, <b>grow</b>, <b>move by themselves</b>, often <b>reproduce</b>.' };
+      $('#check').onclick=()=>{ const L=$$('#dzL .chip'), N=$$('#dzN .chip'); let ok=true; const errs=[]; L.forEach(x=>{ if(x.dataset.live!=='1'){ ok=false; errs.push(x.textContent.trim()+" → not living"); } }); N.forEach(x=>{ if(x.dataset.live!=='0'){ ok=false; errs.push(x.textContent.trim()+" → not non‑living"); } }); if(L.length+N.length!==picks.length){ ok=false; errs.push('Some cards are unsorted'); }
+        if(ok){ add(5); $('#out').innerHTML='<span class="ok">Great sorting! Choose one card and explain your reason in a full sentence.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Recheck:</span> '+errs.join(' · '); }
+      };
+    }
+
+    // ====== 2) FIELD CHECKLIST (Outdoor simulator) ======
+    function renderField(){
+      const v=$('#view'); v.innerHTML='';
+      const fieldPool=[
+        {name:'Leaf', attrs:['green','smooth','alive']},
+        {name:'Stone', attrs:['rough','non‑living']},
+        {name:'Ant', attrs:['alive','moves']},
+        {name:'Puddle', attrs:['wet','non‑living']},
+        {name:'Flower', attrs:['alive','colourful']},
+        {name:'Plastic Bottle', attrs:['man‑made','non‑living']},
+        {name:'Snail', attrs:['alive','slow']},
+        {name:'Twig', attrs:['brown','may be alive']}
+      ];
+      let picks = fieldPool.sort(()=>0.5-Math.random()).slice(0,5);
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><button id="new" class="primary">New Field List</button> <button id="check" class="primary">Check</button></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+          <div>
+            <div class="muted">Tick attributes you observe, then decide if it is living or non‑living</div>
+            <div id="list" class="panel"></div>
+          </div>
+          <div class="panel col">
+            <b>Group Notes</b>
+            <textarea id="notes" placeholder="We saw a leaf. It is living because it grows…"></textarea>
+            <div class="panel tiny">Say <i>Alhamdulillah</i> for Allah’s creations; respect the environment (no littering, no harming creatures).</div>
+          </div>
+        </div>
+        <div class="result" id="out"></div>
+      `; v.appendChild(ui);
+      function draw(){ const L=$('#list'); L.innerHTML=''; picks.forEach((p,i)=>{ const box=document.createElement('div'); box.className='panel'; const id='it'+i; box.innerHTML=`
+            <div class="row"><b>${p.name}</b><span class="tiny">(click info)</span></div>
+            <div class="row tiny">Checklist: 
+              <label><input type="checkbox" data-k="green"> green</label>
+              <label><input type="checkbox" data-k="smooth"> smooth</label>
+              <label><input type="checkbox" data-k="rough"> rough</label>
+              <label><input type="checkbox" data-k="alive"> alive</label>
+              <label><input type="checkbox" data-k="non‑living"> non‑living</label>
+              <label><input type="checkbox" data-k="moves"> moves</label>
+            </div>
+            <div class="row">Decision: 
+              <select class="dec"><option value="">— choose —</option><option value="living">✔ living</option><option value="non">✘ non‑living</option></select>
+            </div>`;
+            box.title = p.name+': '+p.attrs.join(', ');
+            L.appendChild(box);
+          }); }
+      draw();
+      $('#new').onclick=()=>{ picks = fieldPool.sort(()=>0.5-Math.random()).slice(0,5); draw(); $('#out').textContent=''; };
+      $('#check').onclick=()=>{ let ok=true, msg=[]; $$('#list .panel').forEach((box,idx)=>{ const dec=box.querySelector('.dec').value; if(!dec){ ok=false; msg.push('Choose living/non‑living for '+picks[idx].name); } }); if(ok){ add(4); $('#out').innerHTML='<span class="ok">Nice observations! Share one finding with the class.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Finish decisions:</span> '+msg.join(' · '); } };
+    }
+
+    // ====== 3) POSTER BUILDER ======
+    function renderPoster(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><input id="item" placeholder="Add an object (e.g., Bird, Rock)" style="min-width:240px"/> 
+          <select id="type"><option value="living">✔ living</option><option value="non">✘ non‑living</option></select>
+          <input id="why" placeholder="Reason (e.g., eats, grows / does not eat)" style="min-width:260px"/>
+          <button id="add" class="primary">Add to Poster</button>
+          <button id="reset" class="warn">Clear Poster</button>
+        </div>
+        <div class="poster" style="margin-top:10px">
+          <div class="col" id="colL"><b>✔ Living</b></div>
+          <div class="col" id="colN"><b>✘ Non‑living</b></div>
+        </div>
+        <div class="result" id="out"></div>
+        <div class="panel muted">Gallery walk tip: Pick a presenter; explain one item with a full sentence. Value: “Allah created living things with needs and life cycles; we should care for habitats (ECOL1).”</div>
+      `; v.appendChild(ui);
+      $('#add').onclick=()=>{ const it=($('#item').value||'').trim(); const tp=$('#type').value; const why=($('#why').value||'').trim(); if(!it){ $('#out').innerHTML='<span class="err">Type an object name.</span>'; return; } const node=document.createElement('div'); node.className='item'; node.textContent = it + (why? ' — '+why : ''); (tp==='living'? $('#colL'): $('#colN')).appendChild(node); add(2); $('#out').innerHTML='<span class="ok">Added.</span>'; $('#item').value=''; $('#why').value=''; };
+      $('#reset').onclick=()=>{ $('#colL').innerHTML='<b>✔ Living</b>'; $('#colN').innerHTML='<b>✘ Non‑living</b>'; $('#out').textContent=''; };
+    }
+
+    // ====== 4) QUIZ ======
+    function renderQuiz(){
+      const v=$('#view'); v.innerHTML='';
+      const qs=[
+        {q:'A rock is living. (true/false)', a:'false', explain:'It does not eat, grow, or move by itself.'},
+        {q:'Name one sign that something is living.', a:'grow', explain:'Any valid: eats/drinks, grows, moves by itself, breathes, reproduces.'},
+        {q:'“Seed” goes to which group? (living/non‑living)', a:'living', explain:'It can grow into a plant.'},
+        {q:'We say _______ to thank Allah for His creations.', a:'alhamdulillah', explain:'Gratitude.'},
+        {q:'Eco: One way to respect nature is …', a:'do not litter', explain:'Any valid: don’t litter, don’t harm animals, save water, protect plants.'}
+      ]; let i=0, ok=0;
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div id="q" style="font-size:22px;margin-bottom:8px"></div>
+        <div class="row"><input id="a" placeholder="Type answer"/> <button id="next" class="primary">Submit</button></div>
+        <div class="result" id="out"></div>
+        <div class="panel muted">Reflection: “Say one thing you are thankful for today.”</div>
+      `; v.appendChild(ui);
+      const norm=s=>String(s).toLowerCase().replace(/\s+/g,' ').trim();
+      function show(){ $('#q').textContent='Q'+(i+1)+'. '+qs[i].q; $('#a').value=''; $('#out').textContent=''; $('#a').focus(); }
+      $('#next').onclick=()=>{ const want=qs[i].a; const got=norm($('#a').value); const correct = got.includes(norm(want)) || (want==='do not litter' && got.length>0) || (want==='grow' && got.length>0);
+        if(correct){ ok++; add(2); $('#out').innerHTML='<span class="ok">Correct.</span> '+(qs[i].explain||''); } else { add(0); $('#out').innerHTML='<span class="err">Sample answer:</span> <b>'+want+'</b><br><span class="muted">'+(qs[i].explain||'')+'</span>'; }
+        i++; if(i<qs.length){ setTimeout(show,650);} else { $('#q').innerHTML='Finished. Score: '+ok+'/'+qs.length; $('#a').disabled=true; $('#next').disabled=true; }
+      };
+      show();
+    }
+
+    // boot
+    renderSort();
+  </script>
+</body>
+</html>
