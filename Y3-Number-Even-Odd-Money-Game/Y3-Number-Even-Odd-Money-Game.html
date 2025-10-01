@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Y3 • Even/Odd & Money Notation — Week 2 Game</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+    header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+    h1{margin:0;font-size:20px}
+    .sub{color:var(--muted);font-size:13px}
+    .wrap{max-width:1100px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+    @media(min-width:980px){.wrap{grid-template-columns:1.2fr .8fr}}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .tab{background:var(--panel);border:1px solid #243042;color:#e5e7eb;border-radius:10px;padding:10px 12px;cursor:pointer}
+    .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    button{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+    button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+    button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+    input,select{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px}
+    .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+    .ok{color:var(--ok)}
+    .err{color:var(--err)}
+    .muted{color:var(--muted)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .chip{padding:10px 12px;border:1px solid #2a3646;border-radius:999px;background:var(--panel);cursor:grab}
+    .dropzone{min-height:110px;border:2px dashed #334155;border-radius:14px;padding:10px}
+    .drop-ok{outline:2px solid var(--ok)}
+    .wrong{outline:2px solid var(--err)}
+    .grid{display:grid;gap:12px}
+    .coins{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px}
+    .coin{background:#0b1220;border:1px solid #2a3646;border-radius:10px;padding:10px;text-align:center}
+    .shop{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .item{border:1px solid #2a3646;background:#0b1220;border-radius:10px;padding:10px}
+    .stat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+    .stat .tile{background:#0b1220;border:1px solid #253042;border-radius:10px;padding:10px;text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Year 3 • Week 2 Interactive Game</h1>
+    <div class="sub">Even vs Odd • Fair Sharing • Money Notation (RM) • Market Totals • Integrated Quiz • Values: ISSM5 (fair sharing), ISSC6 (honesty & fairness)</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="evenodd">1) Even or Odd?</button>
+      <button class="tab" data-tab="relay">2) Sorting Relay</button>
+      <button class="tab" data-tab="money1">3) Coins to Decimals</button>
+      <button class="tab" data-tab="market">4) Market Totals</button>
+      <button class="tab" data-tab="integrated">5) Integrated Quiz</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Value Links</h3>
+      <ul class="muted" style="margin-left:18px">
+        <li>Start with a short dua for beneficial knowledge.</li>
+        <li><b>ISSM5 (fairness):</b> Even numbers model equal sharing; odd leaves one out — discuss fairness.</li>
+        <li><b>ISSC6:</b> Honest pricing & correct money notation show fairness in trade.</li>
+        <li>Use physical movement: call-outs, hops, relays; mirror these tasks here.</li>
+      </ul>
+      <div class="result">Score: <b id="score">0</b> · Attempts: <b id="tries">0</b></div>
+    </aside>
+  </div>
+
+  <script>
+    const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+    let SCORE=0, TRIES=0; const add=(n)=>{SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES};
+    $$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+      const id=t.dataset.tab; if(id==='evenodd') renderEvenOdd(); if(id==='relay') renderRelay(); if(id==='money1') renderMoney1(); if(id==='market') renderMarket(); if(id==='integrated') renderIntegrated(); }));
+
+    // 1) EVEN OR ODD — quick call-out + drag sort up to 20
+    function renderEvenOdd(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><button id="call">Call-out Number</button><span id="callnum" class="muted">—</span>
+          <button id="even" class="primary">Even</button><button id="odd" class="warn">Odd</button></div>
+        <div class="row" style="margin-top:10px"><label>Range</label><select id="rng"><option value="20">1–20 (core)</option><option value="5">1–5 (support)</option></select>
+          <button id="chips">Make Cards</button><button id="check" class="primary">Check Sorting</button><button id="hint" class="warn">Hint</button></div>
+        <div class="row">
+          <div style="flex:1"><div class="muted">Cards</div><div id="pool" class="chips"></div></div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:10px">
+          <div><div class="muted">Even</div><div id="dzEven" class="dropzone"></div></div>
+          <div><div class="muted">Odd</div><div id="dzOdd" class="dropzone"></div></div>
+        </div>
+        <div class="result" id="out"></div>
+        <div class="result muted">Fairness link: even numbers share equally; odd numbers leave one out — discuss why fairness matters.</div>
+      `; v.appendChild(ui);
+      const rand=(n)=>Math.floor(Math.random()*n)+1; const isEven=(n)=>n%2===0;
+      $('#call').onclick=()=>{ const m=Number($('#rng').value||20); const x=rand(m); $('#callnum').textContent='Number: '+x; };
+      const makeChips=()=>{ const m=Number($('#rng').value||20); const p=$('#pool'); p.innerHTML=''; for(let i=1;i<=m;i++){ const c=document.createElement('div'); c.className='chip'; c.textContent=i; c.id='n_'+i; c.draggable=true; c.dataset.n=i; c.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',c.id)); p.appendChild(c);} };
+      const mkDrop=(el)=>{ el.addEventListener('dragover',e=>{e.preventDefault(); el.classList.add('drop-ok')}); el.addEventListener('dragleave',()=>el.classList.remove('drop-ok')); el.addEventListener('drop',e=>{e.preventDefault(); el.classList.remove('drop-ok'); const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip) el.appendChild(chip);}); };
+      mkDrop($('#dzEven')); mkDrop($('#dzOdd'));
+      $('#chips').onclick=makeChips; makeChips();
+      $('#hint').onclick=()=>{ $('#out').innerHTML='Hint: Even numbers end with 0,2,4,6,8. Odd end with 1,3,5,7,9.' };
+      $('#check').onclick=()=>{
+        const get=(sel)=>$$(`${sel} .chip`).map(x=>Number(x.dataset.n));
+        const ev=get('#dzEven'), od=get('#dzOdd');
+        let ok=true, errs=[]; ev.forEach(n=>{ if(!isEven(n)) {ok=false; errs.push(n+' not even');}}); od.forEach(n=>{ if(isEven(n)) {ok=false; errs.push(n+' not odd');}});
+        const all=[...ev,...od]; const m=Number($('#rng').value||20); const missing=[]; for(let i=1;i<=m;i++){ if(!all.includes(i)) missing.push(i); }
+        if(missing.length){ ok=false; errs.push('Unsorted: '+missing.join(', ')); }
+        if(ok){ add(3); $('#out').innerHTML='<span class="ok">Great sorting!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Check again.</span> '+errs.join(' · '); }
+      };
+      $('#even').onclick=()=>{ const x=Number(($('#callnum').textContent.split(':')[1]||'').trim()); if(!x){return} if(isEven(x)){ add(1); $('#out').innerHTML='<span class="ok">Correct — even.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Oops — that\'s odd.</span>'; }};
+      $('#odd').onclick=()=>{ const x=Number(($('#callnum').textContent.split(':')[1]||'').trim()); if(!x){return} if(!isEven(x)){ add(1); $('#out').innerHTML='<span class="ok">Correct — odd.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Oops — that\'s even.</span>'; }};
+    }
+
+    // 2) SORTING RELAY — justify choices with simple sentence
+    function renderRelay(){
+      const v=$('#view'); v.innerHTML='';
+      const nums=Array.from({length:10},()=>Math.floor(Math.random()*30)+1);
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><div class="muted">Numbers:</div><div id="chips" class="chips"></div></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:10px">
+          <div><div class="muted">Even (Why?)</div><div id="ev" class="dropzone"></div></div>
+          <div><div class="muted">Odd (Why?)</div><div id="od" class="dropzone"></div></div>
+        </div>
+        <div class="row" style="margin-top:10px"><input id="why" placeholder="Type a reason e.g., \'12 ends with 2 so it\'s even\'" style="min-width:340px"/> <button id="save">Save Reason</button> <button id="check" class="primary">Check</button></div>
+        <div class="result" id="out"></div>
+        <div class="result muted">Fairness link (ISSC6): Sharing snacks equally uses even numbers; honesty means placing each number in the right basket.</div>
+      `; v.appendChild(ui);
+      const render=()=>{ const box=$('#chips'); box.innerHTML=''; nums.forEach(n=>{ const c=document.createElement('div'); c.className='chip'; c.textContent=n; c.id='r_'+n; c.draggable=true; c.dataset.n=n; c.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',c.id)); box.appendChild(c); }); };
+      const drop=(el)=>{ el.addEventListener('dragover',e=>{e.preventDefault(); el.classList.add('drop-ok')}); el.addEventListener('dragleave',()=>el.classList.remove('drop-ok')); el.addEventListener('drop',e=>{e.preventDefault(); el.classList.remove('drop-ok'); const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip) el.appendChild(chip); }); };
+      drop($('#ev')); drop($('#od')); render();
+      $('#save').onclick=()=>{ const t=$('#why').value.trim(); if(!t){ $('#out').innerHTML='<span class="err">Type a reason.</span>'; return;} $('#out').innerHTML='<span class="ok">Reason saved:</span> '+t; };
+      $('#check').onclick=()=>{ const get=(sel)=>$$(`${sel} .chip`).map(x=>Number(x.dataset.n)); const ev=get('#ev'), od=get('#od'); let ok=true; ev.forEach(n=>{ if(n%2!==0) ok=false; }); od.forEach(n=>{ if(n%2===0) ok=false; }); if(ok){ add(3); $('#out').innerHTML='<span class="ok">Good team sort!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Some cards are in the wrong place.</span>'; } };
+    }
+
+    // 3) COINS TO DECIMALS — match coins to amounts & write decimals
+    function renderMoney1(){
+      const v=$('#view'); v.innerHTML='';
+      const coins=[1.00,0.50,0.20,0.10,0.05]; // Ringgit/MYR style set
+      let bag=[]; const pick=()=>{ bag=[]; for(let i=0;i<3;i++){ bag.push(coins[Math.floor(Math.random()*coins.length)]);} };
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><button id="new" class="primary">New Coins</button> <span class="muted">Write the amount in RM (decimal).</span></div>
+        <div id="coins" class="coins"></div>
+        <div class="row" style="margin-top:10px"><input id="amt" placeholder="e.g., 1.30"/> <button id="check">Check</button></div>
+        <div class="result" id="out"></div>
+        <div class="result muted">Honesty link (ISSM5/ISSC6): Correct decimal notation is part of fair, halal transactions.</div>
+      `; v.appendChild(ui);
+      const draw=()=>{ pick(); const c=$('#coins'); c.innerHTML=''; bag.forEach(v=>{ const el=document.createElement('div'); el.className='coin'; el.textContent='RM '+v.toFixed(2); c.appendChild(el); }); };
+      $('#new').onclick=draw; draw();
+      $('#check').onclick=()=>{ const want= bag.reduce((s,x)=>s+x,0).toFixed(2); const got=($('#amt').value||'').trim(); if(got===want){ add(3); $('#out').innerHTML='<span class="ok">Correct total!</span>'; } else { add(0); $('#out').innerHTML=`<span class="err">Not quite.</span> Total is <b>RM ${want}</b>`; } };
+    }
+
+    // 4) MARKET TOTALS — add 2 or 3 prices, carrying decimals when needed
+    function renderMarket(){
+      const v=$('#view'); v.innerHTML='';
+      const items=[
+        {name:'Pencil', price:1.20}, {name:'Eraser', price:0.50}, {name:'Ruler', price:0.90},
+        {name:'Sticker', price:0.30}, {name:'Snack', price:1.80}, {name:'Drink', price:2.40}
+      ];
+      let cart=[];
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><div class="muted">Pick 2–3 items, then add the prices.</div> <button id="reset">Reset</button></div>
+        <div class="shop" id="shop"></div>
+        <div class="row" style="margin-top:10px"><input id="sum" placeholder="Total (RM)"/> <button id="check" class="primary">Check</button></div>
+        <div class="result" id="out"></div>
+        <div class="result muted">Fairness in pricing (ISSC6): Be honest when calculating totals for customers.</div>
+      `; v.appendChild(ui);
+      const draw=()=>{ const s=$('#shop'); s.innerHTML=''; items.forEach(it=>{ const d=document.createElement('div'); d.className='item'; d.innerHTML=`<div>${it.name}</div><div class="muted">RM ${it.price.toFixed(2)}</div><button data-name="${it.name}">Add</button>`; d.querySelector('button').onclick=()=>{ if(cart.length<3){ cart.push(it.price); d.querySelector('button').disabled=true; d.querySelector('button').textContent='Added'; } }; s.appendChild(d); }); };
+      $('#reset').onclick=()=>{ cart=[]; draw(); $('#sum').value=''; $('#out').textContent=''; };
+      draw();
+      $('#check').onclick=()=>{ if(cart.length<2){ $('#out').innerHTML='<span class="err">Pick at least 2 items.</span>'; return;} const want=cart.reduce((s,x)=>s+x,0).toFixed(2); const got=($('#sum').value||'').trim(); if(got===want){ add(4); $('#out').innerHTML='<span class="ok">Correct total — great job!</span>'; } else { add(0); $('#out').innerHTML=`<span class="err">Check again.</span> Total is <b>RM ${want}</b>`; } };
+    }
+
+    // 5) INTEGRATED QUIZ — mix of even/odd & money notation
+    function renderIntegrated(){
+      const v=$('#view'); v.innerHTML='';
+      const qs=[
+        {q:'Is 14 even or odd?', a:'even'},
+        {q:'Is 7 even or odd?', a:'odd'},
+        {q:'Coins: RM 0.50 + RM 0.20 = (type like 0.70)', a:'0.70'},
+        {q:'Read: RM 1 and 30 sen → (type 1.30)', a:'1.30'},
+        {q:'Even or odd: 19', a:'odd'},
+        {q:'Add prices: RM 0.90 + RM 1.80 =', a:'2.70'}
+      ]; let i=0, ok=0;
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div id="q" style="font-size:22px;margin-bottom:8px"></div>
+        <div class="row"><input id="a" placeholder="Type answer"/> <button id="next" class="primary">Submit</button></div>
+        <div class="result" id="out"></div>
+        <div class="stat"><div class="tile">Correct<br><b id="c">0</b></div><div class="tile">Total<br><b id="t">0</b></div><div class="tile">Fairness<br><b id="f">Be honest!</b></div><div class="tile">Aim<br><b>7/10 (core) · 5/10 (support)</b></div></div>
+      `; v.appendChild(ui);
+      const norm=s=>String(s).toLowerCase().replace(/\s+/g,' ').trim();
+      const show=()=>{ $('#q').textContent = `Q${i+1}. ${qs[i].q}`; $('#a').value=''; $('#a').focus(); };
+      $('#next').onclick=()=>{ const want=qs[i].a; const got=$('#a').value; if(norm(got)===norm(want)){ ok++; add(2); $('#out').innerHTML='<span class="ok">Correct.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Answer:</span> <b>'+want+'</b>'; } $('#c').textContent=ok; $('#t').textContent=(i+1); i++; if(i<qs.length){ setTimeout(show,600);} else { $('#q').innerHTML='Finished. Score: '+ok+'/'+qs.length; $('#a').disabled=true; $('#next').disabled=true; } };
+      show();
+    }
+
+    // boot
+    renderEvenOdd();
+  </script>
+</body>
+</html>
