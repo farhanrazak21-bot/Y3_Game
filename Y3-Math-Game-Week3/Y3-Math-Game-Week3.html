@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Y3 Math Interactive — Addition & Subtraction Week</title>
+<style>
+  :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--blue:#3b82f6}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+  header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+  h1{margin:0;font-size:20px}
+  .sub{color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .tab{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+  .wrap{max-width:1200px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+  @media(min-width:1100px){.wrap{grid-template-columns:1.35fr .65fr}}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;gap:8px}
+  button{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+  button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+  input,select,textarea{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px}
+  .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+  .ok{color:var(--ok)} .err{color:var(--err)} .muted{color:var(--muted)}
+  .grid{display:grid;gap:12px}
+  .two{grid-template-columns:1fr 1fr}
+  .three{grid-template-columns:repeat(3,1fr)}
+  .panel{background:#0b1220;border:1px solid #253042;border-radius:12px;padding:10px}
+  .chip{padding:10px 12px;border:1px solid #2a3646;border-radius:12px;background:#0b1220;display:inline-flex;gap:8px;align-items:center;cursor:grab;margin:6px}
+  .slot{border:2px dashed #334155;border-radius:12px;min-height:64px;padding:8px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  .big{font-size:22px}
+  .score{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .badge{font-size:12px;padding:2px 6px;border:1px solid #2a3646;border-radius:999px}
+  .num{display:inline-block;min-width:28px;text-align:center;border:1px solid #2a3646;border-radius:8px;padding:4px 8px;margin:2px}
+  .hl{background:#173056;border:1px solid #2a64c4}
+  .colgrid{display:grid;grid-template-columns:auto auto auto;gap:6px;align-items:end}
+  .cell{width:58px;height:42px;border:1px solid #2a3646;border-radius:8px;text-align:center;font-size:20px}
+  .hint{font-size:12px;color:#9aa4b2}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Y3 Math Interactive — Addition & Subtraction Week</h1>
+    <div class="sub">Fact families • Word problems (bar model) • Mental strategies • Column methods • Quiz · Values: <b>Taqwa</b> (honesty) & <b>Amanah</b> (responsibility)</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="facts">1) Fact Families</button>
+      <button class="tab" data-tab="words">2) Word Problems</button>
+      <button class="tab" data-tab="mental">3) Mental Strategies</button>
+      <button class="tab" data-tab="column">4) Column Methods</button>
+      <button class="tab" data-tab="quiz">5) Weekly Quiz</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Value Links</h3>
+      <div class="panel">
+        <ul class="muted" style="margin-left:18px">
+          <li><b>ISSM7 (Taqwa):</b> Be honest when checking; Allah sees our effort.</li>
+          <li><b>ISSC7 (Amanah):</b> Help partners fairly; correct work responsibly.</li>
+          <li>Keyword cues: <i>altogether</i> (+), <i>difference</i>, <i>how many left</i> (−).</li>
+          <li>Use counters/number lines for support; extend to 3-digit for challenge.</li>
+        </ul>
+      </div>
+      <div class="result score"><div class="panel">Score<br><b id="score">0</b></div><div class="panel">Tries<br><b id="tries">0</b></div><div class="panel">Stars<br><b id="stars">★☆☆</b></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+    let SCORE=0, TRIES=0; const add=(n)=>{SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES; const star = SCORE>=28? '★★★': SCORE>=16? '★★☆': SCORE>=8? '★☆☆':'☆☆☆'; $('#stars').textContent=star; };
+    $$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const id=t.dataset.tab; if(id==='facts') renderFacts(); if(id==='words') renderWords(); if(id==='mental') renderMental(); if(id==='column') renderColumn(); if(id==='quiz') renderQuiz(); }));
+
+    // ---------------- 1) FACT FAMILIES ----------------
+    function renderFacts(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid two">
+          <div>
+            <div class="muted">Drag the three numbers into the family, then auto-build the 4 facts</div>
+            <div class="row" style="margin:6px 0">
+              <button class="primary" id="new">New Numbers</button>
+              <button class="primary" id="build">Build Family</button>
+            </div>
+            <div class="panel" id="nums"></div>
+            <div class="grid two" style="margin-top:8px">
+              <div><div class="muted">Parts</div><div class="slot" id="parts"></div></div>
+              <div><div class="muted">Whole</div><div class="slot" id="whole"></div></div>
+            </div>
+            <div class="result" id="out"></div>
+            <div class="panel hint">Tip: Parts + Parts = Whole · Whole − Part = Part</div>
+          </div>
+          <div>
+            <div class="muted">Create your own family</div>
+            <div class="row"><input id="a" type="number" placeholder="part a" style="width:120px"/> + <input id="b" type="number" placeholder="part b" style="width:120px"/> = <input id="c" type="number" placeholder="whole" style="width:120px"/></div>
+            <div class="row" style="margin-top:6px"><button class="primary" id="make">Make 4 Facts</button></div>
+            <div class="panel" id="facts"></div>
+          </div>
+        </div>`;
+      v.appendChild(ui);
+      function ddHook(el){ el.addEventListener('dragover',e=>{e.preventDefault(); el.style.outline='2px solid var(--ok)'}); el.addEventListener('dragleave',()=>el.style.outline='none'); el.addEventListener('drop',e=>{e.preventDefault(); el.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip) el.appendChild(chip); }); }
+      ddHook($('#parts')); ddHook($('#whole'));
+      function newNums(){
+        const p1 = 1+Math.floor(Math.random()*9);
+        const p2 = 1+Math.floor(Math.random()*9);
+        const w = p1+p2;
+        const N=$('#nums'); N.innerHTML='';
+        [p1,p2,w].forEach((n,i)=>{ const el=document.createElement('div'); el.className='chip mono'; el.textContent=n; el.id='n_'+i+'_'+Date.now(); el.draggable=true; el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.id)); N.appendChild(el); });
+        $('#parts').innerHTML=''; $('#whole').innerHTML=''; $('#out').textContent='Drag two parts to Parts, whole to Whole';
+      }
+      newNums(); $('#new').onclick=newNums;
+      $('#build').onclick=()=>{
+        const parts=$$('#parts .chip').map(c=>Number(c.textContent));
+        const whole=$$('#whole .chip').map(c=>Number(c.textContent));
+        if(parts.length!==2||whole.length!==1){ $('#out').innerHTML='<span class="err">Put exactly 2 numbers in Parts and 1 in Whole.</span>'; return; }
+        const [x,y]=parts, w=whole[0];
+        if(x+y!==w){ add(0); $('#out').innerHTML='<span class="err">Check: parts must add to whole.</span>'; return; }
+        const fam=[`${x} + ${y} = ${w}`, `${y} + ${x} = ${w}`, `${w} − ${x} = ${y}`, `${w} − ${y} = ${x}`];
+        add(5); $('#out').innerHTML='<span class="ok">Great! Fact family:</span><br>'+fam.map(s=>`<span class="mono num">${s}</span>`).join(' ');
+      };
+      $('#make').onclick=()=>{ const A=Number($('#a').value), B=Number($('#b').value), C=Number($('#c').value); if(A+B!==C){ $('#facts').innerHTML='<span class="err">Parts must add to whole.</span>'; return; } const fam=[`${A} + ${B} = ${C}`, `${B} + ${A} = ${C}`, `${C} − ${A} = ${B}`, `${C} − ${B} = ${A}`]; $('#facts').innerHTML=fam.map(s=>`<div class="mono">${s}</div>`).join(''); };
+    }
+
+    // ---------------- 2) WORD PROBLEMS ----------------
+    function renderWords(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid two">
+          <div>
+            <div class="muted">Read & highlight keywords, choose + or −, then solve with a bar model</div>
+            <div class="panel" id="story"></div>
+            <div class="row" style="margin-top:6px">
+              <button id="new" class="primary">New Problem</button>
+              <button id="plus" class="primary">Choose +</button>
+              <button id="minus" class="primary">Choose −</button>
+              <button id="show" class="warn">Show Steps</button>
+            </div>
+            <div class="result" id="out"></div>
+          </div>
+          <div>
+            <div class="muted">Bar Model</div>
+            <div class="panel" id="bar"></div>
+            <div class="row" style="margin-top:6px">
+              <input id="ans" type="number" placeholder="Answer" style="width:160px"/>
+              <button id="check" class="primary">Check</button>
+            </div>
+          </div>
+        </div>`;
+      v.appendChild(ui);
+      const bank=[
+        {t:'Ali has 8 apples. He buys 5 more. How many apples altogether?', op:'+', a:13, keys:['altogether','more']},
+        {t:'Aisyah has 14 stickers. She gives 6 to her friend. How many are left?', op:'-', a:8, keys:['left','gives']},
+        {t:'There are 25 birds on a tree. 9 fly away. How many remain?', op:'-', a:16, keys:['fly away','remain']},
+        {t:'A box has 17 pencils. Teacher adds 3. How many pencils now?', op:'+', a:20, keys:['adds','now']}
+      ];
+      let cur=null, choice=null; function newProblem(){ cur = bank[Math.floor(Math.random()*bank.length)]; choice=null; $('#out').textContent='Highlight keywords and choose operation.'; drawStory(); drawBar(); $('#ans').value=''; }
+      function drawStory(){ const words=cur.t.split(' '); const html=words.map(w=>{ const clean=w.replace(/[^a-z]/gi,'').toLowerCase(); const key=cur.keys.some(k=>clean.includes(k.split(' ')[0])); return `<span class="num ${key?'hl':''}">${w}</span>`; }).join(' '); $('#story').innerHTML=html; }
+      function drawBar(show=false){ const t=cur; const bar=$('#bar'); bar.innerHTML=''; if(show){ if(t.op==='+'){ bar.innerHTML=`<div class="mono">[ ${t.t.match(/\d+/g)[0]} ] + [ ${t.t.match(/\d+/g)[1]} ] → total ?</div>`; } else { bar.innerHTML=`<div class="mono">[ total ${t.t.match(/\d+/g)[0]} ] − [ ${t.t.match(/\d+/g)[1]} ] → ?</div>`; } } }
+      $('#new').onclick=newProblem; $('#plus').onclick=()=>{ choice='+'; $('#out').textContent='You chose + (addition)'; }; $('#minus').onclick=()=>{ choice='-'; $('#out').textContent='You chose − (subtraction)'; }; $('#show').onclick=()=>drawBar(true);
+      $('#check').onclick=()=>{ const val=Number($('#ans').value); if(!choice){ $('#out').innerHTML='<span class="err">Choose + or − first.</span>'; return; } if(val===cur.a){ add(5); $('#out').innerHTML='<span class="ok">Correct! Well explained.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Not quite. Try the bar model and keywords.</span>'; }
+      };
+      newProblem();
+    }
+
+    // ---------------- 3) MENTAL STRATEGIES ----------------
+    function renderMental(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid two">
+          <div>
+            <div class="muted">Pick a strategy, then solve. Explain to your partner.</div>
+            <div class="row" style="margin:6px 0">
+              <select id="strat">
+                <option value="near">Near Doubles</option>
+                <option value="bridge">Bridge Through 10</option>
+                <option value="part">Partitioning</option>
+                <option value="comp">Compensation</option>
+              </select>
+              <button id="new" class="primary">New Question</button>
+              <button id="hint" class="warn">Hint</button>
+            </div>
+            <div class="panel big mono" id="q"></div>
+            <div class="row" style="margin-top:6px">
+              <input id="ans" type="number" placeholder="Answer" style="width:160px"/>
+              <button id="check" class="primary">Check</button>
+            </div>
+            <div class="result" id="out"></div>
+          </div>
+          <div>
+            <div class="muted">Explain your working (optional)</div>
+            <textarea id="work" rows="7" class="panel" placeholder="Write or discuss: How did you think it through?"></textarea>
+          </div>
+        </div>`;
+      v.appendChild(ui);
+      function makeQ(){
+        const a=10+Math.floor(Math.random()*40), b=2+Math.floor(Math.random()*9); // mid numbers
+        const op=Math.random()<0.5? '+':'-';
+        const text=`${a} ${op} ${b}`; const ans= op==='+'? a+b: a-b; return {text, ans};
+      }
+      let cur=makeQ(); $('#q').textContent=cur.text;
+      $('#new').onclick=()=>{ cur=makeQ(); $('#q').textContent=cur.text; $('#ans').value=''; $('#out').textContent=''; $('#work').value=''; };
+      $('#hint').onclick=()=>{ const s=$('#strat').value; const tip={ near:'Make a double close by: 7+8 → 7+7+1', bridge:'Bridge to 10: 38+6 → 38+2+4', part:'Split tens & ones: 46+7 → (40+6)+7', comp:'Add then adjust: 39+8 → (40+8)−1' }[s]; $('#out').innerHTML='Hint: '+tip; };
+      $('#check').onclick=()=>{ const val=Number($('#ans').value); if(val===cur.ans){ add(4); $('#out').innerHTML='<span class="ok">Nice mental work!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Try a different strategy (see Hint).</span>'; } };
+    }
+
+    // ---------------- 4) COLUMN METHODS ----------------
+    function renderColumn(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="grid two">
+          <div>
+            <div class="muted">Column addition/subtraction (with/without regrouping)</div>
+            <div class="row" style="margin:6px 0">
+              <button id="add" class="primary">Addition</button>
+              <button id="sub" class="primary">Subtraction</button>
+              <button id="new" class="primary">New Numbers</button>
+              <button id="show" class="warn">Show Base-10</button>
+            </div>
+            <div class="panel" id="cols"></div>
+            <div class="row" style="margin-top:6px">
+              <input id="ans" type="number" placeholder="Answer" style="width:160px"/>
+              <button id="check" class="primary">Check</button>
+            </div>
+            <div class="result" id="out"></div>
+            <div class="hint">Inverse check: use + to check a − problem (and vice versa).</div>
+          </div>
+          <div>
+            <div class="muted">Base-10 Blocks</div>
+            <div class="panel" id="b10">Press "Show Base-10"</div>
+          </div>
+        </div>`;
+      v.appendChild(ui);
+      let op='+'; let A=0, B=0; function newNums(){ const two=()=>10+Math.floor(Math.random()*90); A=two(); B=two(); draw(); $('#ans').value=''; $('#out').textContent=''; $('#b10').textContent='Press "Show Base-10"'; }
+      function draw(){ const aT=Math.floor(A/10), aO=A%10, bT=Math.floor(B/10), bO=B%10; const cols=$('#cols'); cols.innerHTML=`
+          <div class="colgrid">
+            <div></div><div>Tens</div><div>Ones</div>
+            <div class="muted">First</div><div class="cell">${aT}</div><div class="cell">${aO}</div>
+            <div class="muted">Second</div><div class="cell">${bT}</div><div class="cell">${bO}</div>
+            <div class="muted">Op</div><div class="cell" colspan="2">${op}</div>
+          </div>`; }
+      function showB10(){ const mk=(n,icon)=>Array.from({length:n},()=>`<span style='font-size:20px;margin:2px'>${icon}</span>`).join(''); const aT=Math.floor(A/10), aO=A%10, bT=Math.floor(B/10), bO=B%10; $('#b10').innerHTML=`
+          <div><b>${A}</b> → Tens: ${mk(aT,'🟦')} Ones: ${mk(aO,'🟩')}</div>
+          <div><b>${B}</b> → Tens: ${mk(bT,'🟦')} Ones: ${mk(bO,'🟩')}</div>`; }
+      $('#add').onclick=()=>{ op='+'; draw(); }; $('#sub').onclick=()=>{ op='-'; draw(); }; $('#new').onclick=newNums; $('#show').onclick=showB10;
+      $('#check').onclick=()=>{ const val=Number($('#ans').value); const want = op==='+'? A+B: A-B; if(val===want){ add(5); $('#out').innerHTML='<span class="ok">Correct! Now peer-check using the inverse.</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Recheck tens/ones and regrouping if needed.</span>'; } };
+      newNums();
+    }
+
+    // ---------------- 5) WEEKLY QUIZ ----------------
+    function renderQuiz(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><button id="new" class="primary">New Quiz</button> <button id="check" class="primary">Check Answers</button> <button id="hint" class="warn">Hints</button></div>
+        <div class="grid three" id="qs" style="margin-top:8px"></div>
+        <div class="result" id="out"></div>`;
+      v.appendChild(ui);
+      function qFacts(){ const a=1+Math.floor(Math.random()*9), b=1+Math.floor(Math.random()*9), c=a+b; return {t:`Make a fact family with ${a}, ${b}, ${c}. Give: a+b=?, b+a=?, c−a=?, c−b=?`, a:[a+b,b+a,c-a,c-b]}; }
+      function qWord(){ const options=[{t:'Farah has 12 marbles, she gets 5 more. Total?', a:17},{t:'13 birds on a wire, 6 fly away. Left?', a:7}]; const x=options[Math.floor(Math.random()*options.length)]; return {t:x.t, a:x.a}; }
+      function qMental(){ const A=10+Math.floor(Math.random()*40), B=2+Math.floor(Math.random()*9); const op=Math.random()<0.5? '+':'-'; const text=`${A} ${op} ${B}`; return {t:`Mental: ${text}`, a: op==='+'? A+B: A-B}; }
+      function qColumn(){ const A=10+Math.floor(Math.random()*90), B=10+Math.floor(Math.random()*90); const op=Math.random()<0.5? '+':'-'; return {t:`Column (${op}): ${A} ${op} ${B}`, a: op==='+'? A+B: A-B}; }
+      let set=[]; function gen(){ set=[qFacts(), qWord(), qMental(), qColumn(), qWord(), qMental(), qColumn(), qFacts(), qMental()]; draw(); $('#out').textContent=''; }
+      function draw(){ const Q=$('#qs'); Q.innerHTML=''; set.forEach((q,i)=>{ const card=document.createElement('div'); card.className='panel'; if(Array.isArray(q.a)){ card.innerHTML=`<div class="badge">Q${i+1}</div><div>${q.t}</div><div class="row"><input data-i="${i}" data-k="0" placeholder="1" style="width:70px"/><input data-i="${i}" data-k="1" placeholder="2" style="width:70px"/><input data-i="${i}" data-k="2" placeholder="3" style="width:70px"/><input data-i="${i}" data-k="3" placeholder="4" style="width:70px"/></div>`; } else { card.innerHTML=`<div class="badge">Q${i+1}</div><div>${q.t}</div><input data-i="${i}" placeholder="Answer" style="width:140px"/>`; } Q.appendChild(card); }); }
+      gen();
+      $('#new').onclick=gen;
+      $('#hint').onclick=()=>{ $('#out').innerHTML='Hints: Parts+Parts=Whole · Keywords: altogether/difference · Bridge to 10 · Align tens/ones.'; };
+      $('#check').onclick=()=>{ let ok=0; $$('#qs .panel').forEach((card,idx)=>{ const q=set[idx]; if(Array.isArray(q.a)){ const ins=[...card.querySelectorAll('input')]; const good = ins.every((inp,j)=> Number(inp.value)===q.a[j]); if(good){ ok++; ins.forEach(i=>i.style.borderColor='#14532d'); } else { ins.forEach(i=>i.style.borderColor='#6b1c1c'); } } else { const inp=card.querySelector('input'); if(Number(inp.value)===q.a){ ok++; inp.style.borderColor='#14532d'; } else { inp.style.borderColor='#6b1c1c'; } } });
+        const total=set.length; if(ok===total){ add(9); $('#out').innerHTML='<span class="ok">Brilliant — 100%!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Correct so far:</span> '+ok+' / '+total+' · Aim for 7+/10.'; }
+      };
+    }
+
+    // boot
+    renderFacts();
+  </script>
+</body>
+</html>
